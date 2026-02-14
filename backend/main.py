@@ -35,7 +35,7 @@ def invert_smart(r: float, g: float, b: float) -> tuple[float, float, float]:
     Enhanced color inversion for optimal dark mode readability.
     """
     # Convert to HLS
-    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    h, l, s = colorsys.rgb_to_hls(r, g, b)  # noqa: E741
 
     # For very dark colors (nearly black), make them light
     if l < 0.1:
@@ -74,13 +74,12 @@ def process_stream_content(content: bytes, context: str = "unknown") -> bytes:
     if not content:
         return content
 
-    original_content = content
-    changes_made = 0
+    changes_made = 0  # Removed unused 'original_content' variable
 
     # Convert to string for easier regex processing (PDF content is ASCII/UTF-8)
     try:
         content_str = content.decode("latin-1")
-    except:
+    except UnicodeDecodeError:  # Replaced bare except
         logger.warning(f"Could not decode content for {context}, skipping")
         return content
 
@@ -205,8 +204,8 @@ def process_xobject_recursively(doc, xref, processed_xrefs, depth=0):
     processed_xrefs.add(xref)
 
     try:
-        # Get object type
-        obj_type = doc.xref_get_key(xref, "Type")
+        # Get object type - removed unused 'obj_type' variable
+        doc.xref_get_key(xref, "Type")  # Result not used but kept for potential side effects
         subtype = doc.xref_get_key(xref, "Subtype")
 
         if subtype and subtype[1] == "/Form":
@@ -362,7 +361,8 @@ async def convert_pdf(file: UploadFile = File(...)):
                 if subtype and subtype[1] == "/Form":
                     form_xobjects_found += 1
                     process_xobject_recursively(doc, xref, processed_xrefs)
-            except:
+            except Exception as e:
+                logger.debug(f"Skipping xref {xref}: {e}")
                 continue
 
         logger.info(f"Found and processed {form_xobjects_found} Form XObjects")
@@ -376,7 +376,7 @@ async def convert_pdf(file: UploadFile = File(...)):
             # 1. Clean contents
             try:
                 page.clean_contents()
-                logger.debug(f"    Cleaned page contents")
+                logger.debug("    Cleaned page contents")
             except Exception as e:
                 logger.debug(f"    Could not clean page contents: {e}")
 
@@ -406,12 +406,12 @@ async def convert_pdf(file: UploadFile = File(...)):
                     except Exception as e:
                         logger.warning(f"    Error processing stream {xref}: {e}")
             else:
-                logger.debug(f"    Page has no content streams")
+                logger.debug("    Page has no content streams")
 
             # 3. Draw dark background
             try:
                 page.draw_rect(page.rect, color=None, fill=DARK_BG, overlay=False)
-                logger.debug(f"    Added dark background")
+                logger.debug("    Added dark background")
             except Exception as e:
                 logger.warning(f"    Could not draw background: {e}")
 
